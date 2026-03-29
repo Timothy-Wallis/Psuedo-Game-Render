@@ -21,7 +21,8 @@ const WorldCamera = new Camera(player.x, player.y);
 // Stage layout for movement/gravity testing.
 const stageTerrains = [
     // Huge base floor spanning far left and right.
-    new Terrain(-3600, canvas.height - 50, 7600, 50, "#2f4f4f"),
+    new Terrain(200, 0, 50, canvas.height, "#000"),
+    new Terrain(-(canvas.width ** 2), canvas.height -500, canvas.width ** 4, canvas.height * 2, "green")
 ];
 
 const stage = new Stage(player, WorldCamera, stageTerrains);

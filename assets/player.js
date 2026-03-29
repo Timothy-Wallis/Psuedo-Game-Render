@@ -78,6 +78,20 @@ export class Player{
             this.health = this.maxHealth;
         }
     }
+    checkCollisionWithTerrain(){
+        for(const terrain of Terrain.instances){
+            const isHorizontallyOverlapping =
+                this.x < terrain.x + terrain.width &&
+                this.x + this.width > terrain.x;
+            const isVerticallyOverlapping =
+                this.y < terrain.y + terrain.height &&
+                this.y + this.height > terrain.y;
+            if(isHorizontallyOverlapping && isVerticallyOverlapping){
+                return true;
+            }
+        }
+        return false;
+    }
     globalUpdate(){
         this.noMove = true;
         this.regen(this.regenAmount, this.regenRate);
@@ -116,14 +130,14 @@ export class Player{
                     if(this.acceleration < this.vel){
                         this.acceleration += 0.5;
                     }
-                    this.x -= this.acceleration + this.vel;
+                        this.x -= this.acceleration + this.vel;
                     break;
                 case `${this.controls.right}`:
                     this.noMove = false;
                     if(this.acceleration < this.vel){
                         this.acceleration += 0.5;
                     }
-                    this.x += this.acceleration + this.vel;
+                        this.x += this.acceleration + this.vel;
                     break;
             }
         }
