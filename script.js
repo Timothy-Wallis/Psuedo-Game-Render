@@ -52,26 +52,7 @@ const main = () => {
     player.drawHealthBar(healthBarPosition);
     stage.draw();
     player.draw();
-    ctx.fillStyle = "black";
-    ctx.fillText(`( ${Math.round(WorldCamera.mouse.x)}, ${Math.round(WorldCamera.mouse.y)} )`, WorldCamera.mouse.x + WorldCamera.absPosition.x - canvas.width / 2, WorldCamera.mouse.y + WorldCamera.absPosition.y - canvas.height / 2 - 20);
+    WorldCamera.mouseDebug();
     WorldCamera.end();
 }
 main();
-
-document.addEventListener('keydown', e => {
-    if(!player.keys.includes(e.key)){
-        player.keys.push(e.key);
-    }
-});
-
-document.addEventListener('keyup', e => {
-    for(let i = 0; i < player.keys.length; i++){
-        if(e.key === player.keys[i]){
-            player.keys.splice(i, 1);
-        }
-    }
-});
-
-document.addEventListener('mousemove', e => {
-    WorldCamera.mouse = new Vec2(e.clientX, e.clientY);
-});
