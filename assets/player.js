@@ -1,14 +1,14 @@
 import { canvas, ctx } from "./canvas.js";
 import { Terrain } from "./terrain.js";
+import { Vec2, Vec2dfRect } from "./Vectors.js";
+import { Controller } from "./controller.js";
 //Player class
 export class Player{
     floatyVel;
-    constructor(x, y, velocity, controls={'up': ' ', 'down': 's', 'left': 'a', 'right': 'd'}, health = 100, inventory={}, keys=[]){
-        this.x = x;
-        this.y = y;
-        this.width = 50;
-        this.height = 50;
-        this.controls = controls;
+    constructor(position, size, velocity, controller = new Controller(), health = 100, inventory={}, keys=[]){
+        this.absPosition = new Vec2(position.x, position.y);
+        this.absSize = new Vec2(size.x, size.y);
+        this.controller = controller;
         this.health = health;
         this.inv = inventory;
         this.keys = keys;
@@ -32,9 +32,9 @@ export class Player{
     applyGravity(){
         const standingOnTerrain = Terrain.instances.some((terrain) => {
             const isHorizontallyOverlapping =
-                this.x < terrain.x + terrain.width &&
-                this.x + this.width > terrain.x;
-            const isStandingOnTop = Math.abs(this.y + this.height - terrain.y) < 0.1;
+                this.absPosition.x < terrain.absPosition.x + terrain.absSize.x &&
+                this.absPosition.x + this.absSize.x > terrain.absPosition.x;
+            const isStandingOnTop = Math.abs(this.absPosition.y + this.absSize.y - terrain.absPosition.y) < 0.1;
             return isHorizontallyOverlapping && isStandingOnTop;
         });
 
@@ -46,19 +46,19 @@ export class Player{
             this.gainVelY = Math.min(this.gainVelY + this.gravity, this.maxFallSpeed);
         }
 
-        const nextY = this.y + this.gainVelY;
+        const nextY = this.absPosition.y + this.gainVelY;
         let landed = false;
         for (const terrain of Terrain.instances) {
             const isHorizontallyOverlapping =
-                this.x < terrain.x + terrain.width &&
-                this.x + this.width > terrain.x;
+                this.absPosition.x < terrain.absPosition.x + terrain.absSize.x &&
+                this.absPosition.x + this.absSize.x > terrain.absPosition.x;
             const isLandingOnTop =
-                this.y + this.height <= terrain.y &&
-                nextY + this.height >= terrain.y;
+                this.absPosition.y + this.absSize.y <= terrain.absPosition.y &&
+                nextY + this.absSize.y >= terrain.absPosition.y;
 
             if (isHorizontallyOverlapping && isLandingOnTop) {
                 this.grounded = true;
-                this.y = terrain.y - this.height;
+                this.absPosition.y = terrain.absPosition.y - this.absSize.y;
                 this.gainVelY = 0;
                 landed = true;
                 break;
@@ -67,7 +67,7 @@ export class Player{
 
         if(!landed){
             this.grounded = false;
-            this.y = nextY;
+            this.absPosition.y = nextY;
         }
     }
     updateMaxHealth(amount){
@@ -81,11 +81,11 @@ export class Player{
     checkCollisionWithTerrain(){
         for(const terrain of Terrain.instances){
             const isHorizontallyOverlapping =
-                this.x < terrain.x + terrain.width &&
-                this.x + this.width > terrain.x;
+                this.absPosition.x < terrain.absPosition.x + terrain.absSize.x &&
+                this.absPosition.x + this.absSize.x > terrain.absPosition.x;
             const isVerticallyOverlapping =
-                this.y < terrain.y + terrain.height &&
-                this.y + this.height > terrain.y;
+                this.absPosition.y < terrain.absPosition.y + terrain.absSize.y &&
+                this.absPosition.y + this.absSize.y > terrain.absPosition.y;
             if(isHorizontallyOverlapping && isVerticallyOverlapping){
                 return true;
             }
@@ -104,40 +104,40 @@ export class Player{
         }
         for(let i = 0; i < this.keys.length; i++){
             switch(this.keys[i]){
-                case `${this.controls.up}`:
+                case `${this.controller.up}`:
                     if(this.grounded){
                         this.noMove = false;
                         this.gainVelY = -this.jumpStrength;
                         this.grounded = false;
                     }
                     break;
-                case `${this.controls.down}`:
+                case `${this.controller.down}`:
                     for(const terrain of Terrain.instances){
                         const isHorizontallyOverlapping =
-                            this.x < terrain.x + terrain.width &&
-                            this.x + this.width > terrain.x;
-                        const isStandingOnTop = Math.abs(this.y + this.height - terrain.y) < 0.1;
+                            this.absPosition.x < terrain.absPosition.x + terrain.absSize.x &&
+                            this.absPosition.x + this.absSize.x > terrain.absPosition.x;
+                        const isStandingOnTop = Math.abs(this.absPosition.y + this.absSize.y - terrain.absPosition.y) < 0.1;
                         if(isHorizontallyOverlapping && isStandingOnTop && terrain.platform){
-                            this.y += 5;
+                            this.absPosition.y += 5;
                             break;
                         }
                     }
                     this.noMove = false;
                     this.gainVelY = Math.min(this.gainVelY + this.gravity * 2, this.maxFallSpeed);
                     break;
-                case `${this.controls.left}`:
+                case `${this.controller.left}`:
                     this.noMove = false;
                     if(this.acceleration < this.vel){
                         this.acceleration += 0.5;
                     }
-                        this.x -= this.acceleration + this.vel;
+                        this.absPosition.x -= this.acceleration + this.vel;
                     break;
-                case `${this.controls.right}`:
+                case `${this.controller.right}`:
                     this.noMove = false;
                     if(this.acceleration < this.vel){
                         this.acceleration += 0.5;
                     }
-                        this.x += this.acceleration + this.vel;
+                        this.absPosition.x += this.acceleration + this.vel;
                     break;
             }
         }
@@ -145,10 +145,11 @@ export class Player{
     }
     draw(){
         ctx.fillStyle = "red";
-        ctx.fillRect(this.x, this.y, this.width, this.height);
+        const rect = new Vec2dfRect(this.absPosition, this.absSize);
+        rect.draw();
         this.globalUpdate();
     }
-    drawHealthBar(x, y){
+    drawHealthBar(position){
             const barWidth = 200;
             const barHeight = 25;
 
@@ -159,13 +160,13 @@ export class Player{
 
             ctx.fillStyle = "red";
             ctx.strokeStyle = "goldenrod";
-            ctx.fillRect(x, y, filledWidth, barHeight);
-            ctx.strokeRect(x, y, barWidth, barHeight);
+            ctx.fillRect(position.x, position.y, filledWidth, barHeight);
+            ctx.strokeRect(position.x, position.y, barWidth, barHeight);
             ctx.fillStyle = "black";
             ctx.font = "16px Arial";
             ctx.textAlign = "center";
             ctx.textBaseline = "middle";
-            ctx.fillText(`Health: ${Math.round(this.health)}/${this.maxHealth}`, x + barWidth / 2, y + barHeight + 16);
+            ctx.fillText(`Health: ${Math.round(this.health)}/${this.maxHealth}`, position.x + barWidth / 2, position.y + barHeight + 16);
     }
     damage(amount){
         if(!this.onDamage){

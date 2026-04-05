@@ -4,6 +4,7 @@ import { Terrain } from "./assets/terrain.js";
 import { Camera } from "./assets/camera.js";
 import { canvas, ctx } from "./assets/canvas.js";
 import { Stage } from "./assets/stage.js";
+import { Vec2 } from "./assets/Vectors.js";
 
 //const debugColor = "yellow";
 const scrollSpeed = 1.0;
@@ -12,44 +13,48 @@ let renderLoop;
 
 //Canvas Attribs.
 canvas.style.backgroundColor = "skyblue";
+const spawnCoords = new Vec2(0, 0);
+const playerSize = new Vec2(50, 50);
 
-const player = new Player(canvas.width / 2, 0, 2);
+const player = new Player(spawnCoords, playerSize, 2
+);
 player.updateMaxHealth(600);
 player.damage(300);
-const WorldCamera = new Camera(player.x, player.y);
+const WorldCamera = new Camera(spawnCoords, spawnCoords);
 
-// Stage layout for movement/gravity testing.
 const stageTerrains = [
-    // Huge base floor spanning far left and right.
-    new Terrain(200, 0, 50, canvas.height, "#000"),
-    new Terrain(-(canvas.width ** 2), canvas.height -500, canvas.width ** 4, canvas.height * 2, "green")
+    // Main floor
+    new Terrain(new Vec2(-(canvas.width ** 2), canvas.height - 500), new Vec2(canvas.width ** 4, canvas.height * 2), "green"),
+    
+    // Platforms
+    new Terrain(new Vec2(-300, canvas.height - 650), new Vec2(200, 20), "#8B4513"),
+    new Terrain(new Vec2(0, canvas.height - 750), new Vec2(200, 20), "#8B4513"),
+    new Terrain(new Vec2(300, canvas.height - 650), new Vec2(200, 20), "#8B4513"),
+    new Terrain(new Vec2(500, canvas.height - 800), new Vec2(150, 20), "#8B4513"),
+    new Terrain(new Vec2(-500, canvas.height - 800), new Vec2(150, 20), "#8B4513"),
+
+    // Wall on the left
+    new Terrain(new Vec2(-600, canvas.height - 1000), new Vec2(20, 500), "#555"),
+
+    // Wall on the right
+    new Terrain(new Vec2(700, canvas.height - 1000), new Vec2(20, 500), "#555"),
 ];
 
 const stage = new Stage(player, WorldCamera, stageTerrains);
 
+let healthBarPosition = new Vec2(WorldCamera.absPosition.x - canvas.width / 2 + 40, WorldCamera.absPosition.y - canvas.height / 2 + 40);
+
 //Render loop
 const main = () => {
     renderLoop = requestAnimationFrame(main);
-
-    // Update simulation first so camera and draw use the same frame state.
-    WorldCamera.updateCamera(player.x - WorldCamera.x, player.y - WorldCamera.y);
-
-    // Clear in screen space to avoid edge artifacts while camera moves.
-    ctx.setTransform(1, 0, 0, 1, 0, 0);
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-    // Draw world in camera space.
-    ctx.setTransform(
-        1,
-        0,
-        0,
-        1,
-        -WorldCamera.x + canvas.width / 2 - player.width / 2,
-        -WorldCamera.y + canvas.height / 2 - player.height / 2
-    );
+    WorldCamera.begin(player);
+    healthBarPosition = new Vec2(WorldCamera.absPosition.x - canvas.width / 2 + 40, WorldCamera.absPosition.y - canvas.height / 2 + 40);
+    player.drawHealthBar(healthBarPosition);
     stage.draw();
     player.draw();
-    player.drawHealthBar(WorldCamera.x - canvas.width / 2 + 40, WorldCamera.y - canvas.height / 2 + 40);
+    ctx.fillStyle = "black";
+    ctx.fillText(`( ${Math.round(WorldCamera.mouse.x)}, ${Math.round(WorldCamera.mouse.y)} )`, WorldCamera.mouse.x + WorldCamera.absPosition.x - canvas.width / 2, WorldCamera.mouse.y + WorldCamera.absPosition.y - canvas.height / 2 - 20);
+    WorldCamera.end();
 }
 main();
 
@@ -68,14 +73,5 @@ document.addEventListener('keyup', e => {
 });
 
 document.addEventListener('mousemove', e => {
-    WorldCamera.mouseX = e.clientX;
-    WorldCamera.mouseY = e.clientY;
-});
-
-document.addEventListener('keyup', e => {
-    for(let i = 0; i < player.keys.length; i++){
-        if(e.key === player.keys[i]){
-            player.keys.splice(i, 1);
-        }
-    }
+    WorldCamera.mouse = new Vec2(e.clientX, e.clientY);
 });
