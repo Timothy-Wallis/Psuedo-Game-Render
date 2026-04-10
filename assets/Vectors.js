@@ -53,7 +53,6 @@ export class Vec2dlRect {
 }
 
 
-/*
 export class Vec3 {
     x;
     y;
@@ -63,4 +62,4 @@ export class Vec3 {
         this.y = y;
         this.z = z;
     }
-}*/
+}

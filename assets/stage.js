@@ -1,3 +1,4 @@
+import { Terrain } from "./terrain.js";
 export class Stage {
     constructor(player, camera, terrains = []){
         this.player = player;
@@ -5,8 +6,6 @@ export class Stage {
         this.terrains = terrains;
     }
     draw(){
-        for(const terrain of this.terrains){
-            terrain.draw();
-        }
+        Terrain.check(this.camera);
     }
 }
